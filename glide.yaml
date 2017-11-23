@@ -1,0 +1,5 @@
+package: kafka-cli
+import:
+- package: github.com/peterh/liner
+- package: github.com/Shopify/sarama
+  version: ^1.14.0

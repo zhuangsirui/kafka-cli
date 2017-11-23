@@ -1,0 +1,8 @@
+hash: e58b6b12696d3d4290f065ce3f749ef3db3b4f63bfb1978b4337351bd197fac8
+updated: 2017-11-23T14:02:12.546838+08:00
+imports:
+- name: github.com/peterh/liner
+  version: a37ad39843113264dae84a5d89fcee28f50b35c6
+- name: github.com/Shopify/sarama
+  version: 240fd146ce68bcafb034cc5dc977229ffbafa8ea
+testImports: []
