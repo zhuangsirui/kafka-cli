@@ -5,20 +5,139 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/cosiner/argv"
 	"github.com/peterh/liner"
+	"github.com/urfave/cli"
 )
 
-var historyPath = filepath.Join(os.TempDir(), ".kafka-cli-history")
+var (
+	app     = cli.NewApp()
+	history = filepath.Join(os.TempDir(), ".kafka-cli-history")
+)
+
+func setApp() {
+	app.Name = "kafka-cli"
+	app.Version = "0.0.1"
+	if time.Now().Unix()%2 == 0 {
+		app.Usage = "为众人抱薪者，已困顿于荆棘。为自由开路者，已冻毙于风雪。"
+	} else {
+		app.Usage = "为众人抱薪者，不可使其冻毙于风雪。为自由开路者，不可使其困顿于荆棘。"
+	}
+	app.Flags = []cli.Flag{}
+	app.Commands = []cli.Command{
+		{
+			Name:   "connect",
+			Usage:  "connect to a kafka cluster",
+			Action: handleConnect,
+			Flags: []cli.Flag{
+				cli.StringSliceFlag{
+					Name: "addrs",
+				},
+			},
+		},
+		{
+			Name:   "disconnect",
+			Usage:  "disconnect from kafka cluster",
+			Action: handleDisconnect,
+		},
+		{
+			Name:   "info",
+			Usage:  "show kafka-cli info",
+			Action: handleInfo,
+		},
+		{
+			Name:   "produce",
+			Usage:  "produce message",
+			Action: handleProduce,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "key, k",
+					Usage: "key for message",
+				},
+				cli.StringFlag{
+					Name:  "value, v",
+					Usage: "value for message",
+				},
+				cli.Int64Flag{
+					Name:  "partition, p",
+					Usage: "partition id",
+				},
+				cli.StringFlag{
+					Name:  "topic, t",
+					Usage: "topic name",
+				},
+			},
+		},
+		{
+			Name:   "consume",
+			Usage:  "consume topic",
+			Action: handleConsume,
+			Flags: []cli.Flag{
+				cli.Int64Flag{
+					Name:  "partition, p",
+					Usage: "partition id",
+				},
+				cli.StringFlag{
+					Name:  "topic, t",
+					Usage: "topic name",
+				},
+			},
+		},
+		{
+			Name: "list",
+			Subcommands: []cli.Command{
+				{
+					Name:   "topics",
+					Usage:  "list topics in kafka",
+					Action: handleListTopics,
+				},
+				{
+					Name:   "partitions",
+					Usage:  "list topic partitions",
+					Action: handleListPartitions,
+					Flags: []cli.Flag{
+						cli.StringFlag{
+							Name:  "topic, t",
+							Usage: "topic name",
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "get",
+			Subcommands: []cli.Command{
+				{
+					Name:   "offset",
+					Usage:  "get offset on a topic's partition",
+					Action: handleGetOffset,
+					Flags: []cli.Flag{
+						cli.Int64Flag{
+							Name:  "partition, p",
+							Usage: "partition id",
+						},
+						cli.StringFlag{
+							Name:  "topic, t",
+							Usage: "topic name",
+						},
+						cli.Int64Flag{
+							Name:  "offset, o",
+							Usage: "offset, use -1 for newest and -2 for oldest",
+						},
+					},
+				},
+			},
+		},
+	}
+}
 
 func main() {
+	setApp()
 	line := liner.NewLiner()
 	defer func() {
-		if f, err := os.Create(historyPath); err != nil {
+		if f, err := os.Create(history); err != nil {
 			log.Print("Error reading line: ", err)
 		} else {
 			line.WriteHistory(f)
@@ -30,7 +149,7 @@ func main() {
 	line.SetCompleter(func(line string) (c []string) {
 		return
 	})
-	if f, err := os.Open(historyPath); err == nil {
+	if f, err := os.Open(history); err == nil {
 		line.ReadHistory(f)
 		f.Close()
 	}
@@ -39,10 +158,14 @@ func main() {
 		if _cli.Connected() {
 			finalPrompt = fmt.Sprintf("connected %s ", prompt)
 		} else {
-			finalPrompt = fmt.Sprintf("unconnected %s ", prompt)
+			finalPrompt = fmt.Sprintf("disconnected %s ", prompt)
 		}
 		if input, err := line.Prompt(finalPrompt); err == nil {
-			handleInput(input)
+			args, _ := argv.Argv([]rune(input), nil, argv.Run)
+			if len(args) == 0 {
+				continue
+			}
+			app.Run(append([]string{"kafka-cli"}, args[0]...))
 			line.AppendHistory(input)
 		} else if err == liner.ErrPromptAborted {
 			fmt.Print("\n")
@@ -54,150 +177,112 @@ func main() {
 	}
 }
 
-func handleInput(input string) {
-	cmd, args := parseInput(input)
-	switch cmd {
-	case "connect":
-		if checkArgs(args, mulitArgs, "connect <kafka-broker-addrs>") {
-			handleConnect(args)
-		}
-	case "disconnect":
-		if checkArgs(args, 0, "disconnect") {
-			handleDisconnect(args)
-		}
-	case "info":
-		if checkArgs(args, 0, "info") {
-			handleInfo(args)
-		}
-	case "produce":
-		if checkArgs(args, mulitArgs, "produce what ever you want") {
-			handleProduce(args)
-		}
-	case "list-topics":
-		if checkArgs(args, 0, "list-topics") {
-			handleListTopics(args)
-		}
-	case "list-topic-partitions":
-		if checkArgs(args, 1, "list-topic-partitions") {
-			handleListPartitions(args)
-		}
-	case "get-partition-offset":
-		if checkArgs(args, 2, "get-partition-offset topic partition") {
-			handleListOffsets(args)
-		}
-	case "consume":
-		if checkArgs(args, 3, "consume topic partition offset") {
-			handleConsume(args)
-		}
-	}
-}
-
-func parseInput(input string) (string, []string) {
-	args := strings.Split(input, " ")
-	if len(args) >= 1 {
-		return args[0], args[1:]
-	} else {
-		return "", nil
-	}
-}
-
-func handleConnect(args []string) {
+func handleConnect(c *cli.Context) error {
 	_cli.Reset()
-	if err := _cli.Connect(args); err != nil {
+	addrs := c.StringSlice("addrs")
+	fmt.Println("connecting", addrs, "...")
+	if err := _cli.Connect(addrs); err != nil {
 		fmt.Println("connect error:", err)
 	}
+	return nil
 }
 
-func handleDisconnect(args []string) {
+func handleDisconnect(c *cli.Context) error {
 	if err := _cli.Disconnect(); err != nil {
 		fmt.Println("disconnect error:", err)
 	}
+	return nil
 }
 
-func handleInfo(args []string) {
+func handleInfo(c *cli.Context) error {
 	for _, state := range _cli.States() {
 		fmt.Println(state)
 	}
+	return nil
 }
 
-func handleProduce(args []string) {
+func handleProduce(c *cli.Context) error {
 	if !_cli.Connected() {
 		fmt.Println("no available connection")
-		return
+		return nil
 	}
-	offset, err := _cli.Produce("test", 0, []byte(args[0]), []byte(args[1]))
+	var (
+		key       = c.String("key")
+		value     = c.String("value")
+		topic     = c.String("topic")
+		partition = int32(c.Int64("partition"))
+	)
+	offset, err := _cli.Produce(topic, partition, []byte(key), []byte(value))
 	if err != nil {
 		fmt.Printf("produce failed:\n%s\n", err)
-		return
+		return nil
 	}
 	fmt.Printf("produce successful, offset %d\n", offset)
+	return nil
 }
 
-func handleListTopics(args []string) {
+func handleListTopics(c *cli.Context) error {
 	if !_cli.Connected() {
 		fmt.Println("no available connection")
-		return
+		return nil
 	}
 	topics, err := _cli.Topics()
 	if err != nil {
 		fmt.Printf("list topics failed:\n%s\n", err)
-		return
+		return nil
 	}
 	fmt.Println(topics)
+	return nil
 }
 
-func handleListPartitions(args []string) {
+func handleListPartitions(c *cli.Context) error {
 	if !_cli.Connected() {
 		fmt.Println("no available connection")
-		return
+		return nil
 	}
-	partitions, err := _cli.Partitions(args[0])
+	topic := c.String("topic")
+	partitions, err := _cli.Partitions(topic)
 	if err != nil {
 		fmt.Printf("list topic's partitions failed:\n%s\n", err)
-		return
+		return nil
 	}
 	fmt.Println(partitions)
+	return nil
 }
 
-func handleListOffsets(args []string) {
+func handleGetOffset(c *cli.Context) error {
 	if !_cli.Connected() {
 		fmt.Println("no available connection")
-		return
-	}
-	partition, err := strconv.ParseInt(args[1], 10, 32)
-	if err != nil {
-		fmt.Println("partition invalid")
-		return
-	}
-	offset, err := _cli.Offset(args[0], int32(partition), sarama.OffsetNewest)
-	if err != nil {
-		fmt.Printf("get offset failed:\n%s\n", err)
-		return
-	}
-	fmt.Println(offset)
-}
-
-func handleConsume(args []string) {
-	if !_cli.Connected() {
-		fmt.Println("no available connection")
-		return
+		return nil
 	}
 	var (
-		partition, offset int64
-		consumer          sarama.PartitionConsumer
-		err               error
+		topic     = c.String("topic")
+		partition = int32(c.Int64("partition"))
+		offset    = c.Int64("offset")
 	)
-	if partition, err = strconv.ParseInt(args[1], 10, 32); err != nil {
-		fmt.Printf("partition `%s` invalid\n", args[1])
-		return
+	offset, err := _cli.Offset(topic, partition, offset)
+	if err != nil {
+		fmt.Printf("get offset failed:\n%s\n", err)
+		return nil
 	}
-	if offset, err = strconv.ParseInt(args[2], 10, 32); err != nil {
-		fmt.Println("offset invalid")
-		return
+	fmt.Println(offset)
+	return nil
+}
+
+func handleConsume(c *cli.Context) error {
+	if !_cli.Connected() {
+		fmt.Println("no available connection")
+		return nil
 	}
-	if consumer, err = _cli.PartitionConsumer(args[0], int32(partition), offset); err != nil {
+	var (
+		partition = int32(c.Int64("partition"))
+		offset    = c.Int64("offset")
+		topic     = c.String("topic")
+	)
+	consumer, err := _cli.PartitionConsumer(topic, partition, offset)
+	if err != nil {
 		fmt.Printf("get partition consumer failed:\n%s\n", err)
-		return
+		return nil
 	}
 	defer consumer.Close()
 	var (
@@ -227,25 +312,5 @@ func handleConsume(args []string) {
 	}()
 	<-stoppedChan
 	ticker.Stop()
-}
-
-const mulitArgs = -1
-
-func checkArgs(args []string, count int, notice string) bool {
-	switch count {
-	case mulitArgs:
-		if len(args) >= 1 {
-			return true
-		} else {
-			fmt.Println(notice)
-			return false
-		}
-	default:
-		if len(args) == count {
-			return true
-		} else {
-			fmt.Println(notice)
-			return false
-		}
-	}
+	return nil
 }
