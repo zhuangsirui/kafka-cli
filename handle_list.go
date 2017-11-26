@@ -31,11 +31,11 @@ func init() {
 }
 
 func handleListTopics(c *cli.Context) error {
-	if !_cli.Connected() {
+	if !_state.cli.Connected() {
 		fmt.Println("no available connection")
 		return nil
 	}
-	topics, err := _cli.Topics()
+	topics, err := _state.cli.Topics()
 	if err != nil {
 		fmt.Printf("list topics failed:\n%s\n", err)
 		return nil
@@ -45,12 +45,15 @@ func handleListTopics(c *cli.Context) error {
 }
 
 func handleListPartitions(c *cli.Context) error {
-	if !_cli.Connected() {
+	if !_state.cli.Connected() {
 		fmt.Println("no available connection")
 		return nil
 	}
 	topic := c.String("topic")
-	partitions, err := _cli.Partitions(topic)
+	if topic == "" && _state.topic != nil {
+		topic = *_state.topic
+	}
+	partitions, err := _state.cli.Partitions(topic)
 	if err != nil {
 		fmt.Printf("list topic's partitions failed:\n%s\n", err)
 		return nil

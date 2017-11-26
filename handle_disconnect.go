@@ -15,7 +15,7 @@ func init() {
 }
 
 func handleDisconnect(c *cli.Context) error {
-	if err := _cli.Disconnect(); err != nil {
+	if err := _state.cli.Disconnect(); err != nil {
 		fmt.Println("disconnect error:", err)
 	}
 	return nil

@@ -15,7 +15,7 @@ func init() {
 }
 
 func handleInfo(c *cli.Context) error {
-	for _, state := range _cli.States() {
+	for _, state := range _state.cli.States() {
 		fmt.Println(state)
 	}
 	return nil

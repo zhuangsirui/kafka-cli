@@ -20,10 +20,10 @@ func init() {
 }
 
 func handleConnect(c *cli.Context) error {
-	_cli.Reset()
+	_state.cli.Reset()
 	addrs := c.StringSlice("addrs")
 	fmt.Println("connecting", addrs, "...")
-	if err := _cli.Connect(addrs); err != nil {
+	if err := _state.cli.Connect(addrs); err != nil {
 		fmt.Println("connect error:", err)
 	}
 	return nil

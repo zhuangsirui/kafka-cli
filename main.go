@@ -50,14 +50,8 @@ func main() {
 		line.ReadHistory(f)
 		f.Close()
 	}
-	prompt, finalPrompt := ">", ""
 	for {
-		if _cli.Connected() {
-			finalPrompt = fmt.Sprintf("connected %s ", prompt)
-		} else {
-			finalPrompt = fmt.Sprintf("disconnected %s ", prompt)
-		}
-		if input, err := line.Prompt(finalPrompt); err == nil {
+		if input, err := line.Prompt(_state.String() + " > "); err == nil {
 			args, _ := argv.Argv([]rune(input), nil, argv.Run)
 			if len(args) == 0 {
 				continue

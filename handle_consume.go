@@ -58,7 +58,7 @@ func init() {
 const countdown = 1
 
 func handleConsume(c *cli.Context) error {
-	if !_cli.Connected() {
+	if !_state.cli.Connected() {
 		fmt.Println("no available connection")
 		return nil
 	}
@@ -72,11 +72,17 @@ func handleConsume(c *cli.Context) error {
 		fmt.Println(err)
 		return nil
 	}
-	consumer, err := _cli.PartitionConsumer(
-		c.String("topic"),
-		int32(c.Int64("partition")),
-		c.Int64("offset"),
+	var (
+		topic     = c.String("topic")
+		partition = int32(c.Int64("partition"))
 	)
+	if topic == "" && _state.topic != nil {
+		topic = *_state.topic
+	}
+	if !c.IsSet("partition") && _state.partition != nil {
+		partition = *_state.partition
+	}
+	consumer, err := _state.cli.PartitionConsumer(topic, partition, c.Int64("offset"))
 	if err != nil {
 		fmt.Printf("get partition consumer failed:\n%s\n", err)
 		return nil

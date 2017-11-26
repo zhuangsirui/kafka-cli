@@ -33,7 +33,7 @@ func init() {
 }
 
 func handleGetOffset(c *cli.Context) error {
-	if !_cli.Connected() {
+	if !_state.cli.Connected() {
 		fmt.Println("no available connection")
 		return nil
 	}
@@ -42,7 +42,7 @@ func handleGetOffset(c *cli.Context) error {
 		partition = int32(c.Int64("partition"))
 		offset    = c.Int64("offset")
 	)
-	offset, err := _cli.Offset(topic, partition, offset)
+	offset, err := _state.cli.Offset(topic, partition, offset)
 	if err != nil {
 		fmt.Printf("get offset failed:\n%s\n", err)
 		return nil

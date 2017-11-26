@@ -33,7 +33,7 @@ func init() {
 }
 
 func handleProduce(c *cli.Context) error {
-	if !_cli.Connected() {
+	if !_state.cli.Connected() {
 		fmt.Println("no available connection")
 		return nil
 	}
@@ -43,7 +43,13 @@ func handleProduce(c *cli.Context) error {
 		topic     = c.String("topic")
 		partition = int32(c.Int64("partition"))
 	)
-	offset, err := _cli.Produce(topic, partition, []byte(key), []byte(value))
+	if topic == "" && _state.topic != nil {
+		topic = *_state.topic
+	}
+	if !c.IsSet("partition") && _state.partition != nil {
+		partition = *_state.partition
+	}
+	offset, err := _state.cli.Produce(topic, partition, []byte(key), []byte(value))
 	if err != nil {
 		fmt.Printf("produce failed:\n%s\n", err)
 		return nil
