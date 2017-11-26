@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"os"
+	"os/signal"
+	"sync"
 
 	"github.com/urfave/cli"
 )
@@ -86,37 +88,28 @@ func handleConsume(c *cli.Context) error {
 		return nil
 	}
 	defer writer.close()
-	var (
-		counter     = countdown
-		ticker      = time.NewTicker(time.Second)
-		stoppedChan = make(chan struct{})
-	)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-	FetchLoop:
+		defer wg.Done()
 		for {
 			select {
 			case msg := <-consumer.Messages():
 				data, err := packer.pack(msg)
 				if err != nil {
-					close(stoppedChan)
-					break FetchLoop
+					return
 				}
 				writer.write(data)
 				writer.write([]byte("\n"))
-				counter = countdown
 			case err := <-consumer.Errors():
 				fmt.Println("error:", err)
-			case <-ticker.C:
-				counter--
-				fmt.Printf("countdown: %d seconds remain to abort\n", counter)
-				if counter <= 0 {
-					close(stoppedChan)
-					break FetchLoop
-				}
+			case <-sigChan:
+				return
 			}
 		}
 	}()
-	<-stoppedChan
-	ticker.Stop()
+	wg.Wait()
 	return nil
 }
