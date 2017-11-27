@@ -4,10 +4,8 @@
 go get github.com/zhuangsirui/kafka-cli
 ```
 
-# Usage
-
-// todo
+# Examples
 
 # TODO
 
-* Make some example on readme
+* Make some examples on readme
