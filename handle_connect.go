@@ -12,7 +12,7 @@ func init() {
 		Usage:  "connect to a kafka cluster",
 		Action: handleConnect,
 		Flags: []cli.Flag{
-			cli.StringSliceFlag{
+			cli.StringFlag{
 				Name: "addrs",
 			},
 		},
@@ -21,9 +21,13 @@ func init() {
 
 func handleConnect(c *cli.Context) error {
 	_state.cli.Reset()
-	addrs := c.StringSlice("addrs")
-	fmt.Println("connecting", addrs, "...")
-	if err := _state.cli.Connect(addrs); err != nil {
+	addrs := parseAddrs(c.String("addrs"))
+	if len(addrs) == 0 {
+		fmt.Println("must provide at least one broker addr")
+		return nil
+	}
+	fmt.Println("connecting...", addrs)
+	if err := connect(addrs); err != nil {
 		fmt.Println("connect error:", err)
 	}
 	return nil

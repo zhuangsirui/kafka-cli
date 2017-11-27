@@ -6,9 +6,7 @@ import (
 	"github.com/Shopify/sarama"
 )
 
-const (
-	pkgName = "kafka-cli/client"
-)
+const pkgName = "kafka-cli/client"
 
 type Client struct {
 	config      *sarama.Config

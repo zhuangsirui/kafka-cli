@@ -33,8 +33,7 @@ func init() {
 }
 
 func handleProduce(c *cli.Context) error {
-	if !_state.cli.Connected() {
-		fmt.Println("no available connection")
+	if ok := checkConnect(c.GlobalString("addrs")); !ok {
 		return nil
 	}
 	var (

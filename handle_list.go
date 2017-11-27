@@ -31,8 +31,7 @@ func init() {
 }
 
 func handleListTopics(c *cli.Context) error {
-	if !_state.cli.Connected() {
-		fmt.Println("no available connection")
+	if ok := checkConnect(c.GlobalString("addrs")); !ok {
 		return nil
 	}
 	topics, err := _state.cli.Topics()
@@ -45,8 +44,7 @@ func handleListTopics(c *cli.Context) error {
 }
 
 func handleListPartitions(c *cli.Context) error {
-	if !_state.cli.Connected() {
-		fmt.Println("no available connection")
+	if ok := checkConnect(c.GlobalString("addrs")); !ok {
 		return nil
 	}
 	topic := c.String("topic")

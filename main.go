@@ -20,6 +20,12 @@ var (
 func init() {
 	app.Name = "kafka-cli"
 	app.Version = "0.0.1"
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  "addrs",
+			Usage: "set default addrs",
+		},
+	}
 	if time.Now().Unix()%2 == 0 {
 		app.Usage = "为众人抱薪者，已困顿于荆棘。为自由开路者，已冻毙于风雪。"
 	} else {

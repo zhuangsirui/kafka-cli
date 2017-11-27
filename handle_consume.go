@@ -58,8 +58,7 @@ func init() {
 const countdown = 1
 
 func handleConsume(c *cli.Context) error {
-	if !_state.cli.Connected() {
-		fmt.Println("no available connection")
+	if ok := checkConnect(c.GlobalString("addrs")); !ok {
 		return nil
 	}
 	packer, err := newPacker(
@@ -76,7 +75,7 @@ func handleConsume(c *cli.Context) error {
 		topic     = c.String("topic")
 		partition = int32(c.Int64("partition"))
 	)
-	if topic == "" && _state.topic != nil {
+	if !c.IsSet("topic") && _state.topic != nil {
 		topic = *_state.topic
 	}
 	if !c.IsSet("partition") && _state.partition != nil {
