@@ -6,3 +6,5 @@ WORKDIR /go/src/kafka-cli
 COPY . .
 
 RUN go install .
+
+ENTRYPOINT ["/go/bin/kafka-cli"]
