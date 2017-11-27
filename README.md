@@ -25,14 +25,14 @@ disconnected >
 
 ## list
 
-**list topics**
+### list topics
 
 ```bash
 connected > list topics
 [topic-1 topic-2]
 ```
 
-**list partitions**
+### list partitions
 
 ```bash
 connected > list partitions --topic topic-1
@@ -41,7 +41,7 @@ connected > list partitions --topic topic-1
 
 ## get
 
-**get offset**
+### get offset
 
 ```bash
 connected > get offset --topic topic-1 --partition 0 # default for the newest offset on the partition
@@ -96,6 +96,7 @@ $ cat ./topic-test-0.json
 {"key":"key","value":"value","offset":9}
 {"key":"key for the log","value":"value for the log","offset":10}
 ```
+
 
 **more flags at `consume --help`**
 
