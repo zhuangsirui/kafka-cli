@@ -23,8 +23,9 @@ func init() {
 						Usage: "topic name",
 					},
 					cli.Int64Flag{
-						Name:  "offset, o",
-						Usage: "offset, use -1 for newest and -2 for oldest",
+						Name:  "time",
+						Usage: "timestamp, use -1 for newest and -2 for oldest",
+						Value: -1,
 					},
 				},
 			},
@@ -39,9 +40,9 @@ func handleGetOffset(c *cli.Context) error {
 	var (
 		topic     = c.String("topic")
 		partition = int32(c.Int64("partition"))
-		offset    = c.Int64("offset")
+		time      = c.Int64("time")
 	)
-	offset, err := _state.cli.Offset(topic, partition, offset)
+	offset, err := _state.cli.Offset(topic, partition, time)
 	if err != nil {
 		fmt.Printf("get offset failed:\n%s\n", err)
 		return nil
