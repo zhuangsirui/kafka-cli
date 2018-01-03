@@ -2,7 +2,7 @@ package: kafka-cli
 import:
 - package: github.com/peterh/liner
 - package: github.com/Shopify/sarama
-  version: ^1.14.0
+  version: ^1.15.0
 - package: github.com/urfave/cli
   version: ^1.20.0
 - package: github.com/cosiner/argv

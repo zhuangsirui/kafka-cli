@@ -55,8 +55,6 @@ func init() {
 	})
 }
 
-const countdown = 1
-
 func handleConsume(c *cli.Context) error {
 	if ok := checkConnect(c.GlobalString("addrs")); !ok {
 		return nil
