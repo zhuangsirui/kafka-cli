@@ -39,7 +39,9 @@ func handleListTopics(c *cli.Context) error {
 		fmt.Printf("list topics failed:\n%s\n", err)
 		return nil
 	}
-	fmt.Println(topics)
+	for _, topic := range topics {
+		fmt.Println(topic)
+	}
 	return nil
 }
 
